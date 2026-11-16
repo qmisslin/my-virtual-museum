@@ -23,8 +23,8 @@ class MuseumAtlasCompiler extends SceneCompiler {
 export class MuseumIO {
     static ATLAS_SIZE = 512;
     static PADDING = 4;
-    static SAMPLES_GPU = 64;
-    static SAMPLES_CPU = 8;
+    static SAMPLES_GPU = 512;
+    static SAMPLES_CPU = 64;
 
     constructor(editor, assets, report) {
         this.editor = editor;
@@ -484,10 +484,66 @@ export class MuseumIO {
                         }
                     });
 
+
+                    const { denoiseSpatial } = await import('three-gpu-baker');
+
+                    this.report('Denoising lightmap...');
+
                     result = await baker.getResult({
-                        denoise: 'atrous',
+                        denoise: {
+                            type: 'museum-atrous',
+
+                            async run(raw) {
+                                const indirect = await denoiseSpatial(raw, {
+                                    type: 'atrous',
+                                    channels: ['indirect', 'ao'],
+                                    iterations: 4,
+                                    normalPower: 32,
+                                    positionSigma: 0.25,
+                                    colorSigma: 1
+                                });
+
+                                const directInput = {
+                                    ...raw,
+                                    direct: new Float32Array(raw.direct.length),
+                                    indirect: raw.direct.slice()
+                                };
+
+                                const direct = await denoiseSpatial(directInput, {
+                                    type: 'atrous',
+                                    channels: ['indirect'],
+                                    iterations: 3,
+                                    normalPower: 48,
+                                    positionSigma: 0.15,
+                                    colorSigma: 0.65
+                                });
+
+                                const filteredDirect = direct.indirect;
+                                const lightmap = new Float32Array(raw.lightmap.length);
+
+                                for (let i = 0; i < lightmap.length; i++) {
+                                    lightmap[i] = filteredDirect[i] + indirect.indirect[i];
+                                }
+
+                                return {
+                                    ...indirect,
+                                    direct: filteredDirect,
+                                    lightmap,
+                                    metadata: {
+                                        ...indirect.metadata,
+                                        denoiser: {
+                                            type: 'museum-atrous',
+                                            channels: ['direct', 'indirect', 'ao'],
+                                            directIterations: 3,
+                                            indirectIterations: 4
+                                        }
+                                    }
+                                };
+                            }
+                        },
                         padding: true
                     });
+
                 } finally {
                     await baker.dispose();
                 }

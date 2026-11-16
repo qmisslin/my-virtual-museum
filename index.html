@@ -1,33 +1,44 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three.js Scene Editor</title>
+    <title>My Virtual Museum</title>
     <link rel="stylesheet" href="./style.css">
-
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"
-        }
-    }
-    </script>
 </head>
+
 <body>
-    <div id="app">
-        <aside id="sidebar">
-            <h2>Elements</h2>
-            <div id="assets"></div>
+    <main id="editor">
+        <canvas id="scene" aria-label="3D museum editor"></canvas>
+
+        <header id="toolbar" class="panel">
+            <button id="import-glb" type="button">Import GLB</button>
+            <button id="export-glb" type="button">Export GLB</button>
+            <button id="export-png" type="button">Export PNG</button>
+            <button id="clear" type="button" class="danger">Clear</button>
+            <input id="file-input" type="file" accept=".glb,model/gltf-binary" hidden>
+            <output id="status" aria-live="polite"></output>
+        </header>
+
+        <aside id="selection-panel" class="panel" hidden>
+            <div class="panel-heading">
+                <strong>Selection</strong>
+                <span id="selection-count">0 objects</span>
+            </div>
+            <div class="selection-actions">
+                <button id="rotate-cw" type="button" title="Rotate clockwise 90°">↻ 90°</button>
+                <button id="rotate-ccw" type="button" title="Rotate counterclockwise 90°">↺ 90°</button>
+                <button id="delete-selection" type="button" class="danger">Delete</button>
+            </div>
         </aside>
 
-        <main>
-            <div id="viewport"></div>
-            <div id="status">Loading assets...</div>
-        </main>
-    </div>
-
+        <section id="library" class="panel" aria-label="Asset library">
+            <nav id="categories" aria-label="Asset categories"></nav>
+            <div id="variations" aria-label="Asset variations"></div>
+        </section>
+    </main>
     <script type="module" src="./app.js"></script>
 </body>
+
 </html>
